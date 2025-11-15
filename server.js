@@ -1,39 +1,50 @@
-// Importar dependencias
 const express = require('express');
 const mongoose = require('mongoose');
-const path = require('path');
+const cors = require('cors');
 const bodyParser = require('body-parser');
 
-// Crear app Express
 const app = express();
 const PORT = 3000;
 
-// Middleware para manejar datos del body
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
 app.use(bodyParser.json());
 
-// Servir archivos estáticos (HTML, CSS, JS)
-app.use(express.static(path.join(__dirname)));
-
 // Conexión a MongoDB Atlas
-mongoose.connect(
-  'mongodb+srv://karina2005reyes_db_user:6eHZL97SyZ0WdzI0@game.t1iu0ms.mongodb.net/?appName=GAME',
-  { useNewUrlParser: true, useUnifiedTopology: true }
-)
-.then(() => console.log('✅ Conectado a MongoDB'))
-.catch(err => console.error('❌ Error al conectar a MongoDB:', err));
+mongoose.connect('mongodb+srv://karina2005reyes_db_user:6eHZL97SyZ0WdzI0@game.t1iu0ms.mongodb.net/?appName=GAME')
+  .then(() => console.log('✅ Conectado a MongoDB'))
+  .catch(err => console.log('❌ Error al conectar:', err));
 
-// Ruta principal: muestra el index.html
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+// Esquema y modelo
+const JuegoSchema = new mongoose.Schema({
+  nombre: String,
+  plataforma: String,
+  genero: String,
+  horasJugadas: Number,
+  imagen: String
 });
 
-// Ruta de ejemplo para probar conexión
-app.get('/api/test', (req, res) => {
-  res.json({ mensaje: 'Servidor funcionando correctamente 🚀' });
+const Juego = mongoose.model('Juego', JuegoSchema);
+
+// Rutas
+app.get('/api/juegos', async (req, res) => {
+  const juegos = await Juego.find();
+  res.json(juegos);
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+app.post('/api/juegos', async (req, res) => {
+  const nuevoJuego = new Juego(req.body);
+  await nuevoJuego.save();
+  res.json(nuevoJuego);
 });
+
+app.put('/api/juegos/:id', async (req, res) => {
+  const actualizado = await Juego.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  res.json(actualizado);
+});
+
+app.delete('/api/juegos/:id', async (req, res) => {
+  await Juego.findByIdAndDelete(req.params.id);
+  res.json({ mensaje: 'Juego eliminado' });
+});
+
+app.listen(PORT, () => console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`));
